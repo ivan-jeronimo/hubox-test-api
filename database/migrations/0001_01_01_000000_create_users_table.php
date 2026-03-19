@@ -13,7 +13,10 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->string('first_name'); // Primer nombre (todos los nombres de pila)
+            // $table->string('middle_name')->nullable(); // Segundo nombre (eliminado)
+            $table->string('paternal_surname')->nullable(); // Apellido paterno (opcional)
+            $table->string('maternal_surname')->nullable(); // Apellido materno (opcional)
             $table->string('email')->unique();
             $table->string('phone')->unique()->nullable();
             $table->string('curp')->unique()->nullable();

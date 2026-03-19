@@ -3,6 +3,10 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\DocumentTypeController;
+use App\Http\Controllers\UserDocumentController; // Importamos el nuevo controlador
+use App\Http\Resources\UserResource;
 
 /*
 |--------------------------------------------------------------------------
@@ -26,11 +30,16 @@ Route::post('/auth/verify-email-code', [AuthController::class, 'verify']);
 // Fase 2 y 3: Rutas protegidas que requieren Token JWT
 Route::middleware('auth:api')->group(function () {
 
-    // Aquí irán las rutas del usuario una vez que ya tiene su Token:
+    // Rutas de usuario
     Route::get('/user', function (Request $request) {
-        return auth('api')->user();
+        // Usamos UserResource para transformar los datos del usuario autenticado
+        return new UserResource($request->user());
     });
+    Route::put('/user/profile', [UserController::class, 'updateProfile']);
 
-    // PUT /user/profile
-    // POST /user/documents
+    // Rutas de tipos de documentos
+    Route::get('/document-types', [DocumentTypeController::class, 'index']);
+
+    // Rutas para documentos del usuario
+    Route::post('/user/documents', [UserDocumentController::class, 'store']);
 });

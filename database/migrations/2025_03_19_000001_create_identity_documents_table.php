@@ -17,11 +17,11 @@ return new class extends Migration
             $table->foreignId('document_type_id')->constrained('document_types')->restrictOnDelete();
             $table->string('document_number')->nullable();
 
-            // Archivo
-            $table->string('file_path');
-            $table->string('disk')->default('s3');
-            $table->string('mime_type')->nullable();
-            $table->unsignedBigInteger('size')->nullable();
+            // Columnas eliminadas, ahora gestionadas por Spatie MediaLibrary
+            // $table->string('file_path');
+            // $table->string('disk')->default('s3');
+            // $table->string('mime_type')->nullable();
+            // $table->unsignedBigInteger('size')->nullable();
 
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
             $table->timestamps();

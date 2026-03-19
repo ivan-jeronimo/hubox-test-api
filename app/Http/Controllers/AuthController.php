@@ -5,8 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Services\Auth\OtpService;
-use App\Services\Mail\BrevoMailService;
+use App\Services\Mail\BrevoMailService; // Corregido: Usar '\' en lugar de '->'
 use Illuminate\Support\Facades\Log;
+use App\Http\Resources\UserResource; // Importamos el UserResource
 
 class AuthController extends Controller
 {
@@ -28,12 +29,16 @@ class AuthController extends Controller
 
         $request->validate([
             'email' => 'required|email',
-            'name'  => 'required_without:id|string|max:255'
+            'first_name'  => 'required|string|max:255', // Solo el primer nombre es requerido aquí
+            // 'paternal_surname' ya NO es requerido en este paso
         ]);
 
         $user = User::firstOrCreate(
             ['email' => $request->email],
-            ['name'  => $request->name ?? 'User']
+            [
+                'first_name' => $request->first_name,
+                // Los apellidos y middle_name son nullable en la BD, no es necesario pasarlos aquí
+            ]
         );
 
         Log::debug('User fetched/created successfully', ['user_id' => $user->id]);
@@ -41,9 +46,11 @@ class AuthController extends Controller
         $otpCode = $this->otpService->generateOtp($user->email);
         $this->mailService->sendOtpEmail($user->email, $otpCode);
 
-        return response()->json([
-            'message' => 'Código de verificación enviado a tu correo electrónico.'
-        ], 200);
+        // Respuesta estandarizada con el método success del Trait
+        return $this->success(
+            [], // No necesitamos devolver datos específicos en este punto
+            'Código de verificación enviado a tu correo electrónico.'
+        );
     }
 
     /**
@@ -62,9 +69,8 @@ class AuthController extends Controller
 
         if (!$isValid) {
             Log::warning('OTP validation failed', ['email' => $request->email, 'code' => $request->code]);
-            return response()->json([
-                'error' => 'Código inválido o expirado.'
-            ], 400);
+            // Respuesta estandarizada con el método failed del Trait
+            return $this->failed('Código inválido o expirado.', 400);
         }
 
         $user = User::where('email', $request->email)->firstOrFail();
@@ -81,12 +87,14 @@ class AuthController extends Controller
 
         Log::info('JWT token generated successfully', ['user_id' => $user->id]);
 
-        return response()->json([
-            'message' => 'Correo verificado exitosamente.',
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-            'expires_in' => auth('api')->factory()->getTTL() * 60,
-            'user' => $user
-        ], 200);
+        // Respuesta estandarizada con el método success del Trait, con claves en camelCase
+        return $this->success(
+            [
+                'accessToken' => $token, // camelCase
+                'tokenType' => 'Bearer', // camelCase
+                'expiresIn' => auth('api')->factory()->getTTL() * 60, // camelCase
+            ],
+            'Correo verificado exitosamente.'
+        );
     }
 }

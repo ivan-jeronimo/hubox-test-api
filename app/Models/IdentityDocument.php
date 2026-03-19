@@ -3,30 +3,21 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-class IdentityDocument extends Model
+class IdentityDocument extends Model implements HasMedia
 {
+    use InteractsWithMedia;
+
     protected $fillable = [
         'user_id',
         'document_type_id',
         'document_number',
-        'file_path',
-        'disk',
-        'mime_type',
-        'size',
         'status',
+        // 'file_path', 'disk', 'mime_type', 'size' - Eliminados, gestionados por MediaLibrary
     ];
-
-    /**
-     * Get the full URL of the document using the appropriate disk (e.g., S3).
-     *
-     * @return string
-     */
-    public function getFileUrlAttribute()
-    {
-        return Storage::disk($this->disk)->url($this->file_path);
-    }
 
     public function user()
     {
@@ -36,5 +27,24 @@ class IdentityDocument extends Model
     public function documentType()
     {
         return $this->belongsTo(DocumentType::class);
+    }
+
+    /**
+     * Define media collections for this model.
+     */
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('identity_documents')
+             ->singleFile(); // Opcional: si solo se permite un archivo por documento de identidad
+    }
+
+    /**
+     * Define media conversions (optional, for image manipulation).
+     */
+    public function registerMediaConversions(Media $media = null): void
+    {
+        // $this->addMediaConversion('thumb')
+        //     ->width(100)
+        //     ->height(100);
     }
 }
