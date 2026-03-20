@@ -39,7 +39,7 @@ class IdentityDocument extends Model implements HasMedia
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('identity_documents')
-             ->singleFile(); // Opcional: si solo se permite un archivo por documento de identidad
+             ->useDisk('s3'); // Eliminado ->singleFile() para permitir múltiples archivos
     }
 
     /**

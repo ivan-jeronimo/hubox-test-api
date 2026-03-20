@@ -14,8 +14,8 @@ use Filament\Forms\Components\TextInput;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
-use Illuminate\Support\HtmlString; // Import HtmlString
-use Filament\Support\Enums\Icon; // Import Icon for PDF icon
+use Illuminate\Support\HtmlString;
+use Filament\Support\Enums\Icon;
 
 class IdentityDocumentsRelationManager extends RelationManager
 {
@@ -34,11 +34,11 @@ class IdentityDocumentsRelationManager extends RelationManager
                     ->maxLength(255),
                 SpatieMediaLibraryFileUpload::make('identity_documents')
                     ->collection('identity_documents')
-                    ->label('Archivo del Documento')
+                    ->label('Archivos del Documento')
                     ->acceptedFileTypes(['image/*', 'application/pdf'])
                     ->maxSize(5120) // 5MB
+                    ->multiple() // Allow multiple files
                     ->required(),
-                // 'status' and 'approved_at' should not be editable directly in the form
             ]);
     }
 
@@ -53,30 +53,31 @@ class IdentityDocumentsRelationManager extends RelationManager
                 TextColumn::make('document_number')
                     ->label('Número de Documento')
                     ->searchable(),
-                TextColumn::make('file')
-                    ->label('Archivo')
+                TextColumn::make('media_files') // Changed column name to reflect multiple files
+                ->label('Archivos')
                     ->formatStateUsing(function ($state, $record) {
-                        dd($record->getFirstMedia('identity_documents')); // <--- CAMBIADO PARA DEPURACIÓN
-                        $url = $record->getFirstMediaUrl('identity_documents');
-                        if ($url) {
-                            $fileName = $record->getFirstMedia('identity_documents')?->file_name ?? 'Ver Archivo';
-                            $mimeType = $record->getFirstMedia('identity_documents')?->mime_type;
+                        $mediaItems = $record->getMedia('identity_documents');
+                        $htmlOutput = '';
+
+                        if ($mediaItems->isEmpty()) {
+                            return 'No hay archivos';
+                        }
+
+                        foreach ($mediaItems as $media) {
+                            $url = $media->getUrl();
+                            $fileName = $media->file_name;
+                            $mimeType = $media->mime_type;
 
                             if (str_starts_with($mimeType, 'image/')) {
-                                // Larger image preview with Filament's image column classes for lightbox
-                                return new HtmlString('<a href="' . $url . '" target="_blank" class="filament-tables-image-column h-24 w-auto object-cover rounded"><img src="' . $url . '" class="h-24 w-auto object-cover rounded" /></a>');
+                                $htmlOutput .= '<a href="' . $url . '" target="_blank" class="filament-tables-image-column h-24 w-auto object-cover rounded" style="margin-right: 8px; margin-bottom: 8px; display: inline-block;"><img src="' . $url . '" class="h-24 w-auto object-cover rounded" /></a>';
                             } elseif ($mimeType === 'application/pdf') {
-                                // PDF icon with link
-                                return new HtmlString('<a href="' . $url . '" target="_blank" class="flex items-center space-x-2 text-primary-600 hover:underline">
-                                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                        <path fill-rule="evenodd" d="M15.621 4.379a3 3 0 00-4.242 0L10 5.758 8.621 4.379a3 3 0 00-4.242 0c-1.172 1.172-1.172 3.071 0 4.242L10 14.242l5.621-5.621c1.172-1.172 1.172-3.071 0-4.242zM10 16.5a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
-                                    </svg>
-                                    <span>' . $fileName . ' (PDF)</span>
-                                </a>');
+                                // Simplified PDF link for debugging clickability
+                                $htmlOutput .= '<a href="' . $url . '" target="_blank" rel="noopener noreferrer" wire:ignore.self class="text-primary-600 hover:underline" style="margin-bottom: 8px;">' . $fileName . ' (PDF)</a>';
+                            } else {
+                                $htmlOutput .= '<a href="' . $url . '" target="_blank" class="text-primary-600 hover:underline" style="margin-bottom: 8px;">' . $fileName . '</a>';
                             }
-                            return new HtmlString('<a href="' . $url . '" target="_blank" class="text-primary-600 hover:underline">' . $fileName . '</a>');
                         }
-                        return 'No hay archivo';
+                        return new HtmlString($htmlOutput);
                     })
                     ->html()
                     ->toggleable(isToggledHiddenByDefault: false),
@@ -103,24 +104,69 @@ class IdentityDocumentsRelationManager extends RelationManager
                 Tables\Actions\CreateAction::make(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
-                Tables\Actions\Action::make('approve')
-                    ->label('Aprobar')
-                    ->icon('heroicon-o-check-circle')
-                    ->color('success')
-                    ->requiresConfirmation()
-                    ->action(function (\App\Models\IdentityDocument $record) {
-                        $record->update([
-                            'status' => 'approved',
-                            'approved_at' => now(),
-                        ]);
-                        \Filament\Notifications\Notification::make()
-                            ->title('Documento aprobado')
-                            ->success()
-                            ->send();
+                Tables\Actions\ViewAction::make()
+                    ->form(function (\App\Models\IdentityDocument $record): array { // Pass $record to the form closure
+                        return [
+                            Forms\Components\Group::make()
+                                ->schema([
+                                    Forms\Components\Section::make('Detalles del Documento')
+                                        ->schema([
+                                            Forms\Components\Hidden::make('record_id') // Hidden field to pass record ID
+                                            ->default($record->id),
+                                            TextInput::make('documentType.name')
+                                                ->label('Tipo de Documento')
+                                                ->disabled(),
+                                            TextInput::make('document_number')
+                                                ->label('Número de Documento')
+                                                ->disabled(),
+                                            TextInput::make('status')
+                                                ->label('Estado')
+                                                ->disabled(),
+                                            TextInput::make('approved_at')
+                                                ->label('Fecha de Aprobación')
+                                                ->disabled(),
+                                        ])->columns(2),
+                                    Forms\Components\Section::make('Previsualización de Archivos')
+                                        ->schema([
+                                            SpatieMediaLibraryFileUpload::make('identity_documents')
+                                                ->collection('identity_documents')
+                                                ->label('Archivos del Documento')
+                                                ->multiple()
+                                                ->disabled(),
+                                        ]),
+                                ])->columns(1),
+                        ];
                     })
-                    ->hidden(fn (\App\Models\IdentityDocument $record): bool => $record->status === 'approved'),
+                    ->modalSubmitAction(
+                        Tables\Actions\Action::make('approve_from_view')
+                            ->label('Aprobar Documento')
+                            ->icon('heroicon-o-check-circle')
+                            ->color('success')
+                            ->requiresConfirmation()
+                            ->action(function (array $data) { // Changed signature to receive $data
+                                $record = \App\Models\IdentityDocument::find($data['record_id']); // Retrieve record by ID
+                                if (!$record) {
+                                    \Filament\Notifications\Notification::make()
+                                        ->title('Error: Documento no encontrado.')
+                                        ->danger()
+                                        ->send();
+                                    return;
+                                }
+                                $record->update([
+                                    'status' => 'approved',
+                                    'approved_at' => now(),
+                                ]);
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Documento aprobado')
+                                    ->success()
+                                    ->send();
+                            })
+                            ->hidden(function (Tables\Actions\Action $action): bool { // MODIFIED: Use Action to get record
+                                $record = $action->getRecord();
+                                return $record && $record->status === 'approved';
+                            })
+                    ),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -132,6 +178,7 @@ class IdentityDocumentsRelationManager extends RelationManager
     protected function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery();
+        $query->with('media'); // Cargar la relación 'media' para cada documento
         return $query;
     }
 }
