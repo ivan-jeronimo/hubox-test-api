@@ -16,7 +16,7 @@ return [
     |
     */
 
-    'paths' => ['api/*', 'sanctum/csrf-cookie', 'auth/*'],
+    'paths' => ['*', 'sanctum/csrf-cookie'], // Modificado para aplicar CORS a todas las rutas
 
     'allowed_methods' => ['*'],
 
