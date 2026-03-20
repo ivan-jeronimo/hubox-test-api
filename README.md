@@ -1,12 +1,20 @@
 # Hubox API & Admin Panel
 
-Este es el backend y panel de administración (construido con Filament) para el proyecto Hubox.
+Este es el backend y panel de administración para el proyecto Hubox.
 
-## Requisitos
+## Stack Tecnológico y Dependencias Principales
 
-- PHP >= 8.2
-- Composer
-- Base de datos (MySQL, PostgreSQL, etc.)
+Este proyecto está construido utilizando tecnologías y paquetes modernos del ecosistema de PHP y Laravel:
+
+*   **Lenguaje:** PHP `^8.2`
+*   **Framework:** Laravel `^12.0`
+*   **Panel de Administración:** Filament `^3.0`
+*   **Gestión de Archivos:** Spatie Laravel MediaLibrary `^11.21`
+    *   *Plugin:* Filament Spatie Media Library Plugin `^3.2`
+    *   *Almacenamiento en la Nube:* Flysystem AWS S3 v3 `^3.0`
+*   **Autenticación API:** Tymon JWT Auth `^2.3` (JSON Web Tokens)
+*   **Servicio de Correos:** Brevo (vía API HTTP)
+*   **Protección (Anti-bot):** Google reCAPTCHA v3
 
 ## Instalación y Configuración Básica
 
@@ -22,10 +30,12 @@ Este es el backend y panel de administración (construido con Filament) para el 
     *   La URL de tu frontend (`APP_FRONTEND_URL`).
     *   Credenciales de AWS S3 para el almacenamiento de archivos (`AWS_*`).
     *   API Key de Brevo para el envío de correos (`BREVO_API_KEY`).
+    *   Claves de reCAPTCHA.
 
-3.  **Generar la clave de la aplicación y ejecutar migraciones:**
+3.  **Generar claves y ejecutar migraciones:**
     ```bash
     php artisan key:generate
+    php artisan jwt:secret  # Para generar la clave de JWT Auth
     php artisan migrate
     ```
 
