@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\DocumentTypeController;
-use App\Http\Controllers\UserDocumentController; // Importamos el nuevo controlador
+use App\Http\Controllers\UserDocumentController;
 use App\Http\Resources\UserResource;
 
 /*
@@ -42,4 +42,5 @@ Route::middleware('auth:api')->group(function () {
 
     // Rutas para documentos del usuario
     Route::post('/user/documents', [UserDocumentController::class, 'store']);
+    Route::get('/user/documents', [UserDocumentController::class, 'index']); // Nueva ruta para listar documentos
 });

@@ -16,10 +16,17 @@ class CamelCaseToSnakeCaseMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
+        // Si la petición es JSON, procesamos el cuerpo JSON
         if ($request->isJson()) {
             $input = $request->json()->all();
             $transformedInput = $this->transformKeysToSnakeCase($input);
             $request->json()->replace($transformedInput);
+        }
+        // Si no es JSON (ej. form-data), procesamos todos los inputs del request
+        else {
+            $input = $request->all();
+            $transformedInput = $this->transformKeysToSnakeCase($input);
+            $request->replace($transformedInput); // Usamos replace para actualizar todos los inputs
         }
 
         return $next($request);
