@@ -35,7 +35,7 @@ class UserDocumentController extends Controller
     }
 
     /**
-     * Store a newly created identity document in storage.
+     * Store a newly created or updated identity document in storage.
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
@@ -52,42 +52,29 @@ class UserDocumentController extends Controller
             'document_type_id' => [
                 'required',
                 'exists:document_types,id',
-                // Opcional: Asegurar que el usuario no suba el mismo tipo de documento dos veces si no se permite
-                // Rule::unique('identity_documents')->where(function ($query) use ($user) {
-                //     return $query->where('user_id', $user->id);
-                // })
             ],
             'document_number' => 'nullable|string|max:255',
             'file' => 'required|file|mimes:jpg,jpeg,png,pdf|max:15360', // Max 15MB (15 * 1024)
         ]);
 
         try {
-            // Crear el registro IdentityDocument primero
-            $identityDocument = IdentityDocument::create([
-                'user_id' => $user->id,
-                'document_type_id' => $request->document_type_id,
-                'document_number' => $request->document_number,
-                'status' => 'pending', // Estado inicial
-            ]);
+            // Obtener el archivo subido
+            $uploadedFile = $request->file('file');
 
-            // Usar Spatie MediaLibrary para adjuntar el archivo
-            // 'file' es el nombre del input file en la petición
-            $media = $identityDocument->addMediaFromRequest('file')
-                                      ->toMediaCollection('identity_documents'); // Nombre de la colección definida en el modelo
+            // Usar el método upsertForUser para crear o actualizar el documento
+            $identityDocument = IdentityDocument::upsertForUser(
+                $user->id,
+                $request->document_type_id,
+                $request->document_number,
+                [$uploadedFile] // El método espera un array de archivos
+            );
 
-            if (!$media) {
-                // Si la subida falla, eliminamos el registro de IdentityDocument
-                $identityDocument->delete();
-                Log::error('Failed to upload file using MediaLibrary', ['user_id' => $user->id, 'document_id' => $identityDocument->id]);
-                return $this->failed('Error al subir el archivo del documento.', 500);
-            }
-
-            Log::info('Identity document uploaded and registered successfully', ['document_id' => $identityDocument->id, 'media_id' => $media->id, 'user_id' => $user->id]);
+            Log::info('Identity document upserted and registered successfully via API', ['document_id' => $identityDocument->id, 'user_id' => $user->id]);
 
             return $this->success([], 'Documento subido exitosamente para revisión.');
 
         } catch (\Exception $e) {
-            Log::error('Error uploading identity document: ' . $e->getMessage(), ['user_id' => $user->id, 'exception' => $e]);
+            Log::error('Error upserting identity document via API: ' . $e->getMessage(), ['user_id' => $user->id, 'exception' => $e]);
             return $this->error('Ocurrió un error inesperado al procesar el documento.', 500);
         }
     }

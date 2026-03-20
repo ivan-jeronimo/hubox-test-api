@@ -16,6 +16,8 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Illuminate\Support\HtmlString;
 use Filament\Support\Enums\Icon;
+use App\Models\IdentityDocument; // Importar el modelo IdentityDocument
+use Filament\Notifications\Notification; // Importar Notification
 
 class IdentityDocumentsRelationManager extends RelationManager
 {
@@ -101,7 +103,31 @@ class IdentityDocumentsRelationManager extends RelationManager
                 //
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make(),
+                Tables\Actions\CreateAction::make()
+                    ->action(function (array $data, \Filament\Forms\Form $form) {
+                        $ownerRecord = $this->ownerRecord; // El modelo User asociado al RelationManager
+                        $uploadedFiles = $data['identity_documents']; // Obtener los archivos subidos
+
+                        try {
+                            IdentityDocument::upsertForUser(
+                                $ownerRecord->id,
+                                $data['document_type_id'],
+                                $data['document_number'],
+                                $uploadedFiles
+                            );
+
+                            Notification::make()
+                                ->title('Documento guardado exitosamente')
+                                ->success()
+                                ->send();
+                        } catch (\Exception $e) {
+                            Notification::make()
+                                ->title('Error al guardar el documento')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    }),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make()
@@ -115,9 +141,7 @@ class IdentityDocumentsRelationManager extends RelationManager
                                             ->default($record->id),
                                             TextInput::make('documentType.name')
                                                 ->label('Tipo de Documento')
-                                                ->disabled(),
-                                            TextInput::make('document_number')
-                                                ->label('Número de Documento')
+                                                ->default($record->documentType->name) // Añadido esto
                                                 ->disabled(),
                                             TextInput::make('status')
                                                 ->label('Estado')
@@ -204,7 +228,7 @@ class IdentityDocumentsRelationManager extends RelationManager
     protected function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery();
-        $query->with('media'); // Cargar la relación 'media' para cada documento
+        $query->with(['media', 'documentType']); // Cargar la relación 'media' y 'documentType' para cada documento
         return $query;
     }
 }
