@@ -26,19 +26,11 @@ class CustomCorsMiddleware
             $isOriginAllowed = true;
         }
 
-        $response = $next($request);
-
-        if ($isOriginAllowed) {
-            $response->headers->set('Access-Control-Allow-Origin', $origin);
-            $response->headers->set('Access-Control-Allow-Methods', implode(', ', config('cors.allowed_methods')));
-            $response->headers->set('Access-Control-Allow-Headers', implode(', ', config('cors.allowed_headers')));
-            $response->headers->set('Access-Control-Allow-Credentials', config('cors.supports_credentials') ? 'true' : 'false');
-            $response->headers->set('Access-Control-Max-Age', config('cors.max_age'));
-        }
-
-        // Manejar específicamente las peticiones OPTIONS (preflight)
+        // Si la petición es OPTIONS (preflight), la manejamos directamente
         if ($request->isMethod('OPTIONS')) {
             if ($isOriginAllowed) {
+                // Aplicar encabezados CORS para la respuesta OPTIONS
+                $response = new Response();
                 $response->headers->set('Access-Control-Allow-Origin', $origin);
                 $response->headers->set('Access-Control-Allow-Methods', implode(', ', config('cors.allowed_methods')));
                 $response->headers->set('Access-Control-Allow-Headers', implode(', ', config('cors.allowed_headers')));
@@ -49,6 +41,17 @@ class CustomCorsMiddleware
                 // Si el origen no está permitido, responder con 403 Forbidden para OPTIONS
                 return response('Forbidden', 403)->header('Access-Control-Allow-Origin', $origin);
             }
+        }
+
+        // Para peticiones que no son OPTIONS, procesamos la petición y luego añadimos los encabezados
+        $response = $next($request);
+
+        if ($isOriginAllowed) {
+            $response->headers->set('Access-Control-Allow-Origin', $origin);
+            $response->headers->set('Access-Control-Allow-Methods', implode(', ', config('cors.allowed_methods')));
+            $response->headers->set('Access-Control-Allow-Headers', implode(', ', config('cors.allowed_headers')));
+            $response->headers->set('Access-Control-Allow-Credentials', config('cors.supports_credentials') ? 'true' : 'false');
+            $response->headers->set('Access-Control-Max-Age', config('cors.max_age'));
         }
 
         return $response;
