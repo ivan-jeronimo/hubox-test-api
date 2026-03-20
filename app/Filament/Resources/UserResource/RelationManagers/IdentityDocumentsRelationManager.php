@@ -198,7 +198,6 @@ class IdentityDocumentsRelationManager extends RelationManager
                             ->color('success')
                             ->requiresConfirmation()
                             ->action(function (\App\Models\IdentityDocument $record) { // Recibe $record directamente
-                                Log::debug('Approve Document modal action record', ['record_id' => $record->id]); // Línea de depuración
                                 if (!$record) {
                                     Notification::make()
                                         ->title('Error: Documento no encontrado.')
@@ -210,13 +209,62 @@ class IdentityDocumentsRelationManager extends RelationManager
                                     'status' => 'approved',
                                     'approved_at' => now(),
                                 ]);
+
+                                // Enviar correo
+                                $user = $record->user;
+                                if ($user && $user->email) {
+                                    $mailService = app(\App\Services\Mail\BrevoMailService::class);
+                                    $mailService->sendDocumentApprovedEmail(
+                                        $user->email,
+                                        $user->first_name ?? 'Usuario',
+                                        $record->documentType->name ?? 'Documento'
+                                    );
+                                }
+
                                 Notification::make()
-                                    ->title('Documento aprobado')
+                                    ->title('Documento aprobado y correo enviado')
                                     ->success()
                                     ->send();
                             })
                             ->hidden(function (\App\Models\IdentityDocument $record): bool { // Recibe $record directamente
-                                return $record && $record->status === 'approved';
+                                return $record && in_array($record->status, ['approved', 'rejected']);
+                            }),
+                        Tables\Actions\Action::make('reject_from_view')
+                            ->label('Rechazar Documento')
+                            ->icon('heroicon-o-x-circle')
+                            ->color('danger')
+                            ->requiresConfirmation()
+                            ->action(function (\App\Models\IdentityDocument $record) {
+                                if (!$record) {
+                                    Notification::make()
+                                        ->title('Error: Documento no encontrado.')
+                                        ->danger()
+                                        ->send();
+                                    return;
+                                }
+                                $record->update([
+                                    'status' => 'rejected',
+                                    'approved_at' => null,
+                                ]);
+
+                                // Enviar correo
+                                $user = $record->user;
+                                if ($user && $user->email) {
+                                    $mailService = app(\App\Services\Mail\BrevoMailService::class);
+                                    $mailService->sendDocumentRejectedEmail(
+                                        $user->email,
+                                        $user->first_name ?? 'Usuario',
+                                        $record->documentType->name ?? 'Documento'
+                                    );
+                                }
+
+                                Notification::make()
+                                    ->title('Documento rechazado y correo enviado')
+                                    ->success()
+                                    ->send();
+                            })
+                            ->hidden(function (\App\Models\IdentityDocument $record): bool {
+                                return $record && in_array($record->status, ['approved', 'rejected']);
                             }),
                         Tables\Actions\Action::make('cancel_view') // Añadir un botón de cancelar explícito
                             ->label('Cerrar')
