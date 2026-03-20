@@ -27,8 +27,11 @@ Route::get('/ping', function () {
 Route::post('/auth/register-start', [AuthController::class, 'start']);
 Route::post('/auth/verify-email-code', [AuthController::class, 'verify']);
 
-// Fase 2 y 3: Rutas protegidas que requieren Token JWT
+// Rutas protegidas que requieren Token JWT
 Route::middleware('auth:api')->group(function () {
+
+    // Rutas de autenticación
+    Route::post('/auth/logout', [AuthController::class, 'logout']); // Nueva ruta para cerrar sesión
 
     // Rutas de usuario
     Route::get('/user', function (Request $request) {

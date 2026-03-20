@@ -97,4 +97,18 @@ class AuthController extends Controller
             'Correo verificado exitosamente.'
         );
     }
+
+    /**
+     * Log the user out (Invalidate the token).
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function logout()
+    {
+        Log::info('AuthController::logout called', ['user_id' => auth('api')->id()]);
+
+        auth('api')->logout(); // Invalida el token actual
+
+        return $this->success([], 'Sesión cerrada exitosamente.');
+    }
 }
