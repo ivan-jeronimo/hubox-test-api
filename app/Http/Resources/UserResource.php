@@ -31,6 +31,8 @@ class UserResource extends JsonResource
             'phoneVerifiedAt' => $this->phone_verified_at,
             'createdAt' => $this->created_at,
             'updatedAt' => $this->updated_at,
+            'isAdmin' => (bool) $this->is_admin, // Añadido para el contexto de administración
+            // 'documents' => IdentityDocumentResource::collection($this->whenLoaded('identityDocuments')), // Si cargas los documentos de identidad
         ];
     }
 }

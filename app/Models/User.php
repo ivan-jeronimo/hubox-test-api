@@ -6,9 +6,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Log;
 use Tymon\JWTAuth\Contracts\JWTSubject;
+use Filament\Models\Contracts\HasName; // Import the HasName contract
 
-class User extends Authenticatable implements JWTSubject
+class User extends Authenticatable implements JWTSubject, HasName // Implement HasName
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
@@ -32,6 +34,7 @@ class User extends Authenticatable implements JWTSubject
         'photo_path',
         'email_verified_at',
         'phone_verified_at',
+        'is_admin', // Añadido
     ];
 
     /**
@@ -56,6 +59,7 @@ class User extends Authenticatable implements JWTSubject
             'phone_verified_at' => 'datetime',
             'password' => 'hashed',
             'date_of_birth' => 'date',
+            'is_admin' => 'boolean', // Añadido
         ];
     }
 
@@ -66,22 +70,37 @@ class User extends Authenticatable implements JWTSubject
 
     /**
      * Get the user's full name.
+     * This accessor is for general use, not directly for Filament's user name in the header.
      *
      * @return string
      */
     public function getFullNameAttribute(): string
     {
-        $fullName = $this->first_name;
-        // if ($this->middle_name) { // Eliminado
-        //     $fullName .= ' ' . $this->middle_name;
-        // }
-        if ($this->paternal_surname) { // Añadido null check
-            $fullName .= ' ' . $this->paternal_surname;
-        }
-        if ($this->maternal_surname) {
-            $fullName .= ' ' . $this->maternal_surname;
-        }
+        $fullName = trim((string) $this->first_name . ' ' . (string) $this->paternal_surname . ' ' . (string) $this->maternal_surname);
         return $fullName;
+    }
+
+    /**
+     * Get the name for Filament, as required by the HasName contract.
+     * This method will be used by Filament to display the user's name.
+     *
+     * @return string
+     */
+    public function getFilamentName(): string
+    {
+        $name = trim((string) $this->first_name . ' ' . (string) $this->paternal_surname);
+
+        if (empty($name)) {
+            $name = (string) $this->email; // Fallback to email if name parts are empty
+        }
+
+        if (empty($name)) {
+            $name = 'Usuario Desconocido'; // Final fallback
+        }
+
+        Log::debug('getFilamentName() returning: ' . $name); // Keep for debugging if needed
+
+        return $name;
     }
 
     /**

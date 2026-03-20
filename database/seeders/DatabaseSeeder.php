@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
         // Llama a otros seeders aquí
         $this->call([
             DocumentTypeSeeder::class,
+            AdminUserSeeder::class, // Añadido para ejecutar el seeder del administrador
         ]);
 
         // Puedes mantener o eliminar el seeder de usuario de prueba si lo necesitas

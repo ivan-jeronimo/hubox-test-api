@@ -27,7 +27,7 @@ Route::get('/ping', function () {
 Route::post('/auth/register-start', [AuthController::class, 'start']);
 Route::post('/auth/verify-email-code', [AuthController::class, 'verify']);
 
-// Rutas protegidas que requieren Token JWT
+// Rutas protegidas que requieren Token JWT (para usuarios normales)
 Route::middleware('auth:api')->group(function () {
 
     // Rutas de autenticación
@@ -43,7 +43,7 @@ Route::middleware('auth:api')->group(function () {
     // Rutas de tipos de documentos
     Route::get('/document-types', [DocumentTypeController::class, 'index']);
 
-    // Rutas para documentos del usuario
+    // Rutas para documentos del usuario (asumiendo que UserDocumentController maneja IdentityDocuments)
     Route::post('/user/documents', [UserDocumentController::class, 'store']);
     Route::get('/user/documents', [UserDocumentController::class, 'index']); // Nueva ruta para listar documentos
 });

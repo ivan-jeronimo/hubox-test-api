@@ -16,7 +16,11 @@ class IdentityDocument extends Model implements HasMedia
         'document_type_id',
         'document_number',
         'status',
-        // 'file_path', 'disk', 'mime_type', 'size' - Eliminados, gestionados por MediaLibrary
+        'approved_at', // Añadido para registrar la fecha de aprobación
+    ];
+
+    protected $casts = [
+        'approved_at' => 'datetime', // Castear a tipo datetime
     ];
 
     public function user()
