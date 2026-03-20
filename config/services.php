@@ -39,4 +39,10 @@ return [
         'api_key' => env('BREVO_API_KEY'),
     ],
 
+    'recaptcha' => [
+        'site_key' => env('RECAPTCHA_SITE_KEY'), // Clave pública del frontend
+        'secret_key' => env('RECAPTCHA_SECRET_KEY'), // Clave secreta del backend
+        'score_threshold' => env('RECAPTCHA_SCORE_THRESHOLD', 0.5),
+    ],
+
 ];
