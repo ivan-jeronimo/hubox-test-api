@@ -72,7 +72,7 @@ class IdentityDocumentsRelationManager extends RelationManager
                                 $htmlOutput .= '<a href="' . $url . '" target="_blank" class="filament-tables-image-column h-24 w-auto object-cover rounded" style="margin-right: 8px; margin-bottom: 8px; display: inline-block;"><img src="' . $url . '" class="h-24 w-auto object-cover rounded" /></a>';
                             } elseif ($mimeType === 'application/pdf') {
                                 // Simplified PDF link for debugging clickability
-                                $htmlOutput .= '<a href="' . $url . '" target="_blank" rel="noopener noreferrer" wire:ignore.self class="text-primary-600 hover:underline" style="margin-bottom: 8px;">' . $fileName . ' (PDF)</a>';
+                                $htmlOutput .= '<a href="' . $url . '" target="_blank" rel="noopener noreferrer" wire:ignore.self>' . $fileName . ' (PDF)</a>';
                             } else {
                                 $htmlOutput .= '<a href="' . $url . '" target="_blank" class="text-primary-600 hover:underline" style="margin-bottom: 8px;">' . $fileName . '</a>';
                             }
@@ -133,6 +133,32 @@ class IdentityDocumentsRelationManager extends RelationManager
                                                 ->label('Archivos del Documento')
                                                 ->multiple()
                                                 ->disabled(),
+                                            // Nuevo Placeholder para PDFs
+                                            Forms\Components\Placeholder::make('pdf_preview')
+                                                ->label('Documentos PDF')
+                                                ->content(function (\App\Models\IdentityDocument $record) {
+                                                    $mediaItems = $record->getMedia('identity_documents')->filter(function ($media) {
+                                                        return $media->mime_type === 'application/pdf';
+                                                    });
+
+                                                    if ($mediaItems->isEmpty()) {
+                                                        return new HtmlString('No hay PDFs adjuntos.');
+                                                    }
+
+                                                    $htmlOutput = '<ul>';
+                                                    foreach ($mediaItems as $media) {
+                                                        $url = $media->getUrl();
+                                                        $fileName = $media->file_name;
+                                                        $htmlOutput .= '<li><a href="' . $url . '" target="_blank" rel="noopener noreferrer" class="text-primary-600 hover:underline">' . $fileName . '</a></li>';
+                                                    }
+                                                    $htmlOutput .= '</ul>';
+                                                    return new HtmlString($htmlOutput);
+                                                })
+                                                ->visible(function (\App\Models\IdentityDocument $record) {
+                                                    return $record->getMedia('identity_documents')->filter(function ($media) {
+                                                        return $media->mime_type === 'application/pdf';
+                                                    })->isNotEmpty();
+                                                }),
                                         ]),
                                 ])->columns(1),
                         ];
