@@ -18,6 +18,7 @@ use Illuminate\Support\HtmlString;
 use Filament\Support\Enums\Icon;
 use App\Models\IdentityDocument; // Importar el modelo IdentityDocument
 use Filament\Notifications\Notification; // Importar Notification
+use Illuminate\Support\Facades\Log; // Importar Log
 
 class IdentityDocumentsRelationManager extends RelationManager
 {
@@ -132,6 +133,9 @@ class IdentityDocumentsRelationManager extends RelationManager
             ->actions([
                 Tables\Actions\ViewAction::make()
                     ->form(function (\App\Models\IdentityDocument $record): array { // Pass $record to the form closure
+                        // Asegurar que la relación documentType esté cargada para esta instancia del registro
+                        $record->loadMissing('documentType');
+
                         return [
                             Forms\Components\Group::make()
                                 ->schema([
@@ -141,7 +145,7 @@ class IdentityDocumentsRelationManager extends RelationManager
                                             ->default($record->id),
                                             TextInput::make('documentType.name')
                                                 ->label('Tipo de Documento')
-                                                ->default($record->documentType->name) // Añadido esto
+                                                ->formatStateUsing(fn (\App\Models\IdentityDocument $record) => $record->documentType->name ?? 'N/A') // Usar formatStateUsing
                                                 ->disabled(),
                                             TextInput::make('status')
                                                 ->label('Estado')
@@ -187,16 +191,16 @@ class IdentityDocumentsRelationManager extends RelationManager
                                 ])->columns(1),
                         ];
                     })
-                    ->modalSubmitAction(
+                    ->modalActions([ // CORREGIDO: Usando modalActions
                         Tables\Actions\Action::make('approve_from_view')
                             ->label('Aprobar Documento')
                             ->icon('heroicon-o-check-circle')
                             ->color('success')
                             ->requiresConfirmation()
-                            ->action(function (array $data) { // Changed signature to receive $data
-                                $record = \App\Models\IdentityDocument::find($data['record_id']); // Retrieve record by ID
+                            ->action(function (\App\Models\IdentityDocument $record) { // Recibe $record directamente
+                                Log::debug('Approve Document modal action record', ['record_id' => $record->id]); // Línea de depuración
                                 if (!$record) {
-                                    \Filament\Notifications\Notification::make()
+                                    Notification::make()
                                         ->title('Error: Documento no encontrado.')
                                         ->danger()
                                         ->send();
@@ -206,16 +210,21 @@ class IdentityDocumentsRelationManager extends RelationManager
                                     'status' => 'approved',
                                     'approved_at' => now(),
                                 ]);
-                                \Filament\Notifications\Notification::make()
+                                Notification::make()
                                     ->title('Documento aprobado')
                                     ->success()
                                     ->send();
                             })
-                            ->hidden(function (Tables\Actions\Action $action): bool { // MODIFIED: Use Action to get record
-                                $record = $action->getRecord();
+                            ->hidden(function (\App\Models\IdentityDocument $record): bool { // Recibe $record directamente
                                 return $record && $record->status === 'approved';
-                            })
-                    ),
+                            }),
+                        Tables\Actions\Action::make('cancel_view') // Añadir un botón de cancelar explícito
+                            ->label('Cerrar')
+                            ->color('gray')
+                            ->action(function (Tables\Actions\Action $action) {
+                                $action->cancel(); // Cierra el modal
+                            }),
+                    ]),
                 Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([

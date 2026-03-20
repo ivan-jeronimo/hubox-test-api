@@ -18,6 +18,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Filters\SelectFilter;
+use Illuminate\Support\HtmlString; // Importar HtmlString para iconos
 
 class UserResource extends Resource
 {
@@ -48,7 +49,7 @@ class UserResource extends Resource
                             ->required()
                             ->maxLength(255)
                             ->unique(ignoreRecord: true), // Ignorar el registro actual al editar
-                        TextInput::make('phone')
+                        TextInput::make('phone') // Re-añadido
                             ->label('Teléfono')
                             ->tel()
                             ->maxLength(20),
@@ -73,19 +74,27 @@ class UserResource extends Resource
 
                 Forms\Components\Section::make('Configuración de Usuario')
                     ->schema([
-                        // Toggle::make('is_admin') // Eliminado para que no se pueda hacer admin desde este recurso
-                        //     ->label('Es Administrador')
-                        //     ->helperText('Activar para otorgar permisos de administrador.'),
+                        // Restaurado el Placeholder para la vista
+                        Forms\Components\Placeholder::make('email_verified_status')
+                            ->label('Correo Verificado')
+                            ->content(function (?User $record) {
+                                if (!$record || !$record->email_verified_at) {
+                                    return new HtmlString('<span style="color: red;">❌ No verificado</span>');
+                                }
+                                return new HtmlString('<span style="color: green;">✅ Verificado</span>');
+                            })
+                            ->visible(fn (string $operation): bool => $operation === 'view'), // Solo visible en ViewAction
                         Toggle::make('email_verified_at')
                             ->label('Correo Verificado')
                             ->helperText('Marcar si el correo electrónico del usuario ha sido verificado.')
                             ->dehydrateStateUsing(fn (?bool $state): ?string => $state ? now() : null)
-                            ->dehydrated(fn (?bool $state): bool => $state !== null),
-                        Toggle::make('phone_verified_at')
-                            ->label('Teléfono Verificado')
-                            ->helperText('Marcar si el número de teléfono del usuario ha sido verificado.')
-                            ->dehydrateStateUsing(fn (?bool $state): ?string => $state ? now() : null)
-                            ->dehydrated(fn (?bool $state): bool => $state !== null),
+                            ->dehydrated(fn (?bool $state): bool => $state !== null)
+                            ->visible(fn (string $operation): bool => $operation === 'edit' || $operation === 'create'), // Visible en Edit y Create
+                        // Eliminado: Toggle::make('phone_verified_at')
+                        //     ->label('Teléfono Verificado')
+                        //     ->helperText('Marcar si el número de teléfono del usuario ha sido verificado.')
+                        //     ->dehydrateStateUsing(fn (?bool $state): ?string => $state ? now() : null)
+                        //     ->dehydrated(fn (?bool $state): bool => $state !== null),
                     ])->columns(2),
             ]);
     }
@@ -105,7 +114,7 @@ class UserResource extends Resource
                     ->label('Correo Electrónico')
                     ->sortable()
                     ->searchable(),
-                TextColumn::make('phone')
+                TextColumn::make('phone') // Re-añadido
                     ->label('Teléfono')
                     ->searchable(),
                 IconColumn::make('is_admin')
@@ -115,10 +124,10 @@ class UserResource extends Resource
                     ->label('Email Verificado')
                     ->boolean()
                     ->sortable(),
-                IconColumn::make('phone_verified_at')
-                    ->label('Teléfono Verificado')
-                    ->boolean()
-                    ->sortable(),
+                // Eliminado: IconColumn::make('phone_verified_at')
+                //     ->label('Teléfono Verificado')
+                //     ->boolean()
+                //     ->sortable(),
                 TextColumn::make('created_at')
                     ->label('Creado')
                     ->dateTime()
@@ -140,9 +149,9 @@ class UserResource extends Resource
                 Tables\Filters\Filter::make('email_verified_at')
                     ->query(fn (Builder $query): Builder => $query->whereNotNull('email_verified_at'))
                     ->label('Email Verificado'),
-                Tables\Filters\Filter::make('phone_verified_at')
-                    ->query(fn (Builder $query): Builder => $query->whereNotNull('phone_verified_at'))
-                    ->label('Teléfono Verificado'),
+                // Eliminado: Tables\Filters\Filter::make('phone_verified_at')
+                //     ->query(fn (Builder $query): Builder => $query->whereNotNull('phone_verified_at'))
+                //     ->label('Teléfono Verificado'),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
@@ -175,7 +184,7 @@ class UserResource extends Resource
 
     public static function getGloballySearchableAttributes(): array
     {
-        return ['first_name', 'paternal_surname', 'maternal_surname', 'email', 'phone', 'curp'];
+        return ['first_name', 'paternal_surname', 'maternal_surname', 'email', 'phone', 'curp']; // Re-añadido 'phone'
     }
 
     // Add this method to filter out admin users by default
