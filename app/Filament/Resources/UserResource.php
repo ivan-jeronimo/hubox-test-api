@@ -63,13 +63,6 @@ class UserResource extends Resource
                         TextInput::make('address')
                             ->label('Dirección')
                             ->maxLength(255),
-                        TextInput::make('password')
-                            ->label('Contraseña')
-                            ->password()
-                            ->dehydrateStateUsing(fn (string $state): string => \Hash::make($state))
-                            ->dehydrated(fn (?string $state): bool => filled($state))
-                            ->required(fn (string $operation): bool => $operation === 'create')
-                            ->maxLength(255),
                     ])->columns(2),
 
                 Forms\Components\Section::make('Configuración de Usuario')

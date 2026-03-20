@@ -9,7 +9,7 @@
     <p>Por favor, ingresa a la aplicación para revisar los detalles y vuelve a subir el documento asegurándote de que cumpla con los requisitos necesarios.</p>
 
     <p style="text-align: center; margin-top: 30px; margin-bottom: 30px;">
-        <a href="{{ rtrim(env('APP_FRONTEND_URL', config('app.url')), '/') . '/profile' }}" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Ir a mi perfil</a>
+        <a href="{{ rtrim(config('app.frontend_url'), '/') . '/profile' }}" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Ir a mi perfil</a>
     </p>
 
     <p>Si necesitas asistencia, nuestro equipo de soporte está listo para ayudarte.</p>

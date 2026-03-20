@@ -33,6 +33,9 @@ class IdentityDocumentResource extends Resource
     protected static ?string $modelLabel = 'Documento de Identidad';
     protected static ?string $pluralModelLabel = 'Documentos de Identidad';
 
+    // Ocultar este recurso del menú de navegación
+    protected static bool $shouldRegisterNavigation = false;
+
     public static function form(Form $form): Form
     {
         return $form
