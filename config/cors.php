@@ -20,8 +20,12 @@ return [
 
     'allowed_methods' => ['*'],
 
-    // Modificado: Si CORS_ALLOWED_ORIGINS no está definido, por defecto permite todos los orígenes ('*')
-    'allowed_origins' => explode(',', env('CORS_ALLOWED_ORIGINS', '*')),
+    // Modificado: Ahora permite explícitamente el origen del frontend de DigitalOcean y localhost para desarrollo
+    'allowed_origins' => [
+        'https://hubox-frontend-3j8p5.ondigitalocean.app',
+        'http://localhost:5173', // Añadido para desarrollo local
+        // Puedes añadir otros orígenes aquí si es necesario
+    ],
 
     'allowed_headers' => ['*'],
 
